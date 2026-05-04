@@ -11,37 +11,53 @@ exports.handler = async function (event) {
   if (event.httpMethod === "OPTIONS") return { statusCode: 200, headers, body: "" };
   if (event.httpMethod !== "POST") return { statusCode: 405, headers, body: JSON.stringify({ error: "Metodo non consentito" }) };
 
-  // Strip trailing slash and /rest/v1 if accidentally included
   const baseUrl = SUPABASE_URL.replace(/\/rest\/v1\/?$/, "").replace(/\/$/, "");
 
   try {
     const { user_id, data } = JSON.parse(event.body);
     if (!user_id || !data) return { statusCode: 400, headers, body: JSON.stringify({ error: "user_id e data sono obbligatori" }) };
 
-    console.log("Saving to:", `${baseUrl}/rest/v1/portfolios`);
+    const reqHeaders = {
+      "Content-Type": "application/json",
+      "apikey": SUPABASE_KEY,
+      "Authorization": `Bearer ${SUPABASE_KEY}`,
+      "Prefer": "return=minimal",
+    };
 
-    const res = await fetch(`${baseUrl}/rest/v1/portfolios`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "apikey": SUPABASE_KEY,
-        "Authorization": `Bearer ${SUPABASE_KEY}`,
-        "Prefer": "resolution=merge-duplicates,return=minimal",
-      },
-      body: JSON.stringify({
-        user_id,
-        data,
-        updated_at: new Date().toISOString(),
-      }),
-    });
+    // Step 1: try PATCH (update existing row)
+    const patchRes = await fetch(
+      `${baseUrl}/rest/v1/portfolios?user_id=eq.${encodeURIComponent(user_id)}`,
+      {
+        method: "PATCH",
+        headers: reqHeaders,
+        body: JSON.stringify({ data, updated_at: new Date().toISOString() }),
+      }
+    );
 
-    if (!res.ok) {
-      const errText = await res.text();
-      console.error("Supabase error:", res.status, errText);
-      throw new Error(`Supabase ${res.status}: ${errText}`);
+    if (patchRes.ok) {
+      // Supabase returns Content-Range: */0 when no rows matched
+      const range = patchRes.headers.get("content-range") || "";
+      if (!range.endsWith("/0")) {
+        console.log("Updated existing record for user_id:", user_id);
+        return { statusCode: 200, headers, body: JSON.stringify({ ok: true, method: "patch" }) };
+      }
     }
 
-    return { statusCode: 200, headers, body: JSON.stringify({ ok: true }) };
+    // Step 2: no existing row — INSERT
+    console.log("Inserting new record for user_id:", user_id);
+    const postRes = await fetch(`${baseUrl}/rest/v1/portfolios`, {
+      method: "POST",
+      headers: reqHeaders,
+      body: JSON.stringify({ user_id, data, updated_at: new Date().toISOString() }),
+    });
+
+    if (!postRes.ok) {
+      const errText = await postRes.text();
+      console.error("Supabase INSERT error:", postRes.status, errText);
+      throw new Error(`Supabase ${postRes.status}: ${errText}`);
+    }
+
+    return { statusCode: 200, headers, body: JSON.stringify({ ok: true, method: "insert" }) };
   } catch (err) {
     console.error("save-portfolio error:", err);
     return { statusCode: 500, headers, body: JSON.stringify({ error: err.message }) };
