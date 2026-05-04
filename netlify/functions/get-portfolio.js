@@ -1,5 +1,5 @@
-const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_KEY = process.env.SUPABASE_KEY;
+const SUPABASE_URL = process.env.SUPABASE_URL || "https://nelfehxjyrphnlkyjurl.supabase.co";
+const SUPABASE_KEY = process.env.SUPABASE_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5lbGZlaHhqeXJwaG5sa3lqdXJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5MTIzODksImV4cCI6MjA5MzQ4ODM4OX0.haowQ9FePugPJQ1cRWviUxf_FlCYq5B7XbHwmZ53u_c";
 
 exports.handler = async function (event) {
   const headers = {
@@ -13,9 +13,12 @@ exports.handler = async function (event) {
   const { user_id } = event.queryStringParameters || {};
   if (!user_id) return { statusCode: 400, headers, body: JSON.stringify({ error: "user_id obbligatorio" }) };
 
+  // Strip trailing slash and /rest/v1 if accidentally included
+  const baseUrl = SUPABASE_URL.replace(/\/rest\/v1\/?$/, "").replace(/\/$/, "");
+
   try {
     const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/portfolios?user_id=eq.${encodeURIComponent(user_id)}&select=data&limit=1`,
+      `${baseUrl}/rest/v1/portfolios?user_id=eq.${encodeURIComponent(user_id)}&select=data&limit=1`,
       {
         headers: {
           "apikey": SUPABASE_KEY,
