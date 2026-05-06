@@ -742,9 +742,31 @@ function renderPfBar() {
     `<button class="pf-chip" onclick="openModal('pfModal')">+ Nuovo</button>`;
 }
 
+// Returns positions grouped by ticker with aggregated qty and weighted avg price
+function groupPositions() {
+  const grouped = [], seen = {};
+  pf().positions.forEach((p, i) => {
+    const cur = livePrices[p.ticker] || p.current;
+    if (seen[p.ticker] !== undefined) {
+      const g = grouped[seen[p.ticker]];
+      const totalQty = g.qty + p.qty;
+      g.avgPrice = (g.qty * g.avgPrice + p.qty * p.avgPrice) / totalQty;
+      g.qty = totalQty;
+      g.current = cur;
+      if (p.inPac) g.inPac = true;
+      if (p.isDistribution) g.isDistribution = true;
+      if ((p.dividendYield||0) > (g.dividendYield||0)) g.dividendYield = p.dividendYield;
+    } else {
+      seen[p.ticker] = grouped.length;
+      grouped.push({ ...p, current: cur });
+    }
+  });
+  return grouped;
+}
+
 function calcMetrics() {
   let inv=0, cur=0, divTotal=0;
-  pf().positions.forEach(p => { inv += p.qty*p.avgPrice; cur += p.qty*p.current; });
+  pf().positions.forEach(p => { inv += p.qty*p.avgPrice; cur += p.qty*(livePrices[p.ticker]||p.current); });
   (pf().dividends||[]).forEach(d => { divTotal += d.total||0; });
   return { inv, cur, pl: cur-inv, pct: inv ? ((cur-inv)/inv*100) : 0, divTotal };
 }
@@ -814,22 +836,52 @@ function renderPositions() {
 
 // ─── TREEMAP ─────────────────────────────────────────────────────────────────
 function renderTreemap() {
-  const pos = pf().positions;
+  const pos = groupPositions(); // use aggregated positions
   if (!pos.length) { document.getElementById('treemap').innerHTML = '<div class="empty">Nessuna posizione</div>'; return; }
-  const total = pos.reduce((s,p) => s + p.qty*p.current, 0);
-  const items = pos.map((p,i) => ({ ticker: p.ticker, nome: p.nome, val: p.qty*p.current, pct: (p.qty*p.current/total)*100, color: COLORS[i%COLORS.length] }))
+  const total = pos.reduce((s,p) => s + p.qty*p.current, 0) || 1;
+  const items = pos
+    .map((p,i) => ({ ticker:p.ticker, nome:p.nome, val:p.qty*p.current, pct:(p.qty*p.current/total)*100, color:COLORS[i%COLORS.length] }))
     .sort((a,b) => b.val-a.val);
 
   const wrap = document.getElementById('treemap');
-  const W = wrap.offsetWidth || 600, H = 260;
-  const cells = squarify(items.map(it => it.pct), W, H);
-  wrap.innerHTML = cells.map((c,i) => {
-    const it = items[i];
-    const showLabel = c.w > 40 && c.h > 30;
-    return `<div class="treemap-cell" style="left:${c.x}px;top:${c.y}px;width:${c.w}px;height:${c.h}px;background:${it.color};" title="${it.nome}: ${it.pct.toFixed(1)}%">
-      ${showLabel ? `<div class="treemap-label">${it.ticker}</div><div class="treemap-pct">${it.pct.toFixed(1)}%</div>` : ''}
+  const W = wrap.offsetWidth || 700, H = 260;
+
+  // Simple slice-and-dice layout: alternate horizontal/vertical splits
+  // More reliable than squarify for avoiding thin slivers
+  const cells = sliceDice(items, 0, 0, W, H, true);
+  wrap.innerHTML = cells.map(c => {
+    const showLabel = c.w > 45 && c.h > 32;
+    return `<div class="treemap-cell" style="left:${c.x.toFixed(1)}px;top:${c.y.toFixed(1)}px;width:${c.w.toFixed(1)}px;height:${c.h.toFixed(1)}px;background:${c.color};" title="${c.nome}: ${c.pct.toFixed(1)}%">
+      ${showLabel ? `<div class="treemap-label">${c.ticker}</div><div class="treemap-pct">${c.pct.toFixed(1)}%</div>` : ''}
     </div>`;
   }).join('');
+}
+
+function sliceDice(items, x, y, w, h, horizontal) {
+  if (!items.length) return [];
+  if (items.length === 1) return [{ ...items[0], x, y, w, h }];
+  const total = items.reduce((s,it) => s+it.val, 0);
+  // Find best split point (closest to 50/50)
+  let sum = 0, splitIdx = 0, bestDiff = Infinity;
+  for (let i=0; i<items.length-1; i++) {
+    sum += items[i].val;
+    const diff = Math.abs(sum/total - 0.5);
+    if (diff < bestDiff) { bestDiff = diff; splitIdx = i; }
+  }
+  const frac = items.slice(0, splitIdx+1).reduce((s,it) => s+it.val, 0) / total;
+  if (horizontal) {
+    const wA = w * frac, wB = w * (1-frac);
+    return [
+      ...sliceDice(items.slice(0, splitIdx+1), x,    y, wA, h, !horizontal),
+      ...sliceDice(items.slice(splitIdx+1),    x+wA, y, wB, h, !horizontal),
+    ];
+  } else {
+    const hA = h * frac, hB = h * (1-frac);
+    return [
+      ...sliceDice(items.slice(0, splitIdx+1), x, y,    w, hA, !horizontal),
+      ...sliceDice(items.slice(splitIdx+1),    x, y+hA, w, hB, !horizontal),
+    ];
+  }
 }
 
 function squarify(values, W, H) {
@@ -874,9 +926,9 @@ function squarify(values, W, H) {
 
 // ─── P&L CARDS ───────────────────────────────────────────────────────────────
 function renderPL() {
-  const pos = pf().positions;
+  const pos = groupPositions(); // use aggregated positions
   const m = calcMetrics();
-  const maxAbs = Math.max(...pos.map(p => Math.abs((p.current-p.avgPrice)*p.qty)));
+  const maxAbs = Math.max(1, ...pos.map(p => Math.abs((p.current-p.avgPrice)*p.qty)));
 
   document.getElementById('plSummary').innerHTML = `
     <div class="metric"><div class="metric-label">P&L Totale</div><div class="metric-value ${m.pl>=0?'up':'down'}">${fmt(m.pl)}</div><div class="metric-sub ${m.pl>=0?'up':'down'}">${fmtPct(m.pct)}</div></div>
@@ -887,7 +939,7 @@ function renderPL() {
   document.getElementById('plGrid').innerHTML = pos.map((p,i) => {
     const pl = (p.current-p.avgPrice)*p.qty;
     const pct = ((p.current-p.avgPrice)/p.avgPrice)*100;
-    const barW = maxAbs > 0 ? Math.abs(pl)/maxAbs*100 : 0;
+    const barW = Math.abs(pl)/maxAbs*100;
     if (!best || pct > ((best.current-best.avgPrice)/best.avgPrice*100)) best = p;
     if (!worst || pct < ((worst.current-worst.avgPrice)/worst.avgPrice*100)) worst = p;
     return `<div class="pl-card">
@@ -1052,14 +1104,15 @@ function genLabels(nPoints) {
 
 function buildPerfDatasets(nPoints) {
   const sets=[];
-  const inv=pf().positions.reduce((s,p)=>s+p.qty*p.avgPrice,0)||1;
-  const cur=pf().positions.reduce((s,p)=>s+p.qty*p.current,0);
+  const gpos=groupPositions();
+  const inv=gpos.reduce((s,p)=>s+p.qty*p.avgPrice,0)||1;
+  const cur=gpos.reduce((s,p)=>s+p.qty*p.current,0);
   const pfRet=(cur-inv)/inv*(nPoints/252);
   if(perfMode==='total'){
     sets.push({label:'Portafoglio',_color:'#3266ad',_dashed:false,data:genSeries(pfRet,.013,nPoints,42),
       borderColor:'#3266ad',backgroundColor:'rgba(50,102,173,0.06)',fill:true,tension:.4,pointRadius:0,pointHoverRadius:4,borderWidth:2.5});
   } else {
-    pf().positions.forEach((p,i)=>{
+    gpos.forEach((p,i)=>{
       const r=(p.current-p.avgPrice)/p.avgPrice*(nPoints/252);
       sets.push({label:p.ticker,_color:COLORS[i%COLORS.length],_dashed:false,data:genSeries(r,.015,nPoints,p.ticker.charCodeAt(0)*13+i),
         borderColor:COLORS[i%COLORS.length],backgroundColor:'transparent',fill:false,tension:.4,pointRadius:0,pointHoverRadius:4,borderWidth:1.8,hidden:!!hiddenSeries[p.ticker]});
@@ -1105,7 +1158,7 @@ function buildPerfChart() {
 }
 
 function buildAllocCharts() {
-  const pos=pf().positions;
+  const pos=groupPositions(); // use aggregated positions
   const typeColors={'Azione':'#3266ad','ETF':'#1D9E75','Obbligazione':'#BA7517'};
   const sColors=['#3266ad','#1D9E75','#D85A30','#BA7517','#7F77DD','#D4537E','#378ADD','#639922','#E24B4A'];
   const byType={};
