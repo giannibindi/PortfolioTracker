@@ -528,7 +528,7 @@ async function doAuth() {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error_description || data.msg || 'Errore autenticazione');
     authToken = data.access_token;
-    authUserId = data.user?.id;
+    authUserId = data.user?.id || data.id; // handle both login and signup response shapes
     localStorage.setItem('pt_token', authToken);
     localStorage.setItem('pt_uid', authUserId);
     localStorage.setItem('pt_email', email);
@@ -559,17 +559,18 @@ async function doLogout() {
 // Try restore session on load
 async function tryRestoreSession() {
   const token = localStorage.getItem('pt_token');
-  const uid = localStorage.getItem('pt_uid');
-  const email = localStorage.getItem('pt_email');
-  if (!token || !uid) return;
-  // Verify token is still valid
+  if (!token) return;
   try {
+    // Always re-fetch user from Supabase to get the real UUID
     const res = await fetch(`${SUPA_URL}/auth/v1/user`, {
       headers: { 'apikey': SUPA_KEY, 'Authorization': `Bearer ${token}` }
     });
     if (!res.ok) throw new Error('Token scaduto');
-    authToken = token; authUserId = uid;
-    document.getElementById('userEmail').textContent = email || '';
+    const user = await res.json();
+    authToken = token;
+    authUserId = user.id; // always use the real Supabase UUID
+    localStorage.setItem('pt_uid', authUserId); // update stored uid
+    document.getElementById('userEmail').textContent = user.email || '';
     document.getElementById('authScreen').style.display = 'none';
     document.getElementById('mainApp').style.display = '';
     await loadFromCloud();
