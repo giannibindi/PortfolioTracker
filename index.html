@@ -762,10 +762,36 @@ function renderMetrics() {
 function renderPositions() {
   const pos = pf().positions;
   document.getElementById('posEmpty').style.display = pos.length ? 'none' : 'block';
-  document.getElementById('posBody').innerHTML = pos.map((p,i) => {
-    const val=p.qty*p.current, pl=(p.current-p.avgPrice)*p.qty, pct=((p.current-p.avgPrice)/p.avgPrice)*100;
+
+  // Group positions by ticker — aggregate qty (weighted avg price) across multiple entries
+  const grouped = [];
+  const seen = {};
+  pos.forEach((p, i) => {
+    if (seen[p.ticker] !== undefined) {
+      const g = grouped[seen[p.ticker]];
+      const totalQty = g.qty + p.qty;
+      g.avgPrice = (g.qty * g.avgPrice + p.qty * p.avgPrice) / totalQty;
+      g.qty = totalQty;
+      g.indices.push(i); // track all source indices for delete
+      // Merge flags
+      if (p.inPac) g.inPac = true;
+      if (p.isDistribution) g.isDistribution = true;
+      if (p.dividendYield > (g.dividendYield||0)) g.dividendYield = p.dividendYield;
+    } else {
+      seen[p.ticker] = grouped.length;
+      grouped.push({ ...p, indices: [i] });
+    }
+  });
+
+  document.getElementById('posBody').innerHTML = grouped.map((p) => {
+    // Use live price if available, otherwise use stored current
+    const current = livePrices[p.ticker] || p.current;
+    const val = p.qty * current;
+    const pl = (current - p.avgPrice) * p.qty;
+    const pct = ((current - p.avgPrice) / p.avgPrice) * 100;
     const bc = p.tipo==='Azione'?'badge-a':p.tipo==='ETF'?'badge-e':'badge-o';
     const isLive = !!livePrices[p.ticker];
+    const indicesJson = JSON.stringify(p.indices);
     return `<tr>
       <td><strong>${p.ticker}</strong>${p.inPac?` <span class="badge badge-pac">PAC</span>`:''}</td>
       <td style="color:var(--text2);max-width:120px;overflow:hidden;text-overflow:ellipsis;">${p.nome}</td>
@@ -773,15 +799,15 @@ function renderPositions() {
       <td>${p.qty.toLocaleString('it-IT',{maximumFractionDigits:4})}</td>
       <td>${fmt(p.avgPrice)}</td>
       <td><div class="price-cell">
-        <input type="number" value="${p.current.toFixed(4)}" step="any" min="0"
+        <input type="number" value="${current.toFixed(4)}" step="any" min="0"
           style="width:90px;padding:3px 6px;font-size:12px;border:1px solid var(--border2);border-radius:4px;background:var(--bg2);color:var(--text);"
-          onchange="updatePrice(${i},this.value)" />
+          onchange="updatePriceByTicker('${p.ticker}',this.value)" />
         ${isLive?'<span class="live-badge">live</span>':''}
       </div></td>
       <td><strong>${fmt(val)}</strong></td>
       <td class="${pl>=0?'up':'down'}">${fmt(pl)}</td>
       <td class="${pl>=0?'up':'down'}">${fmtPct(pct)}</td>
-      <td><button class="del-btn" onclick="deletePosition(${i})">×</button></td>
+      <td><button class="del-btn" onclick="deletePositionByTicker('${p.ticker}')" title="Elimina tutte le voci ${p.ticker}">×</button></td>
     </tr>`;
   }).join('');
 }
@@ -1144,11 +1170,31 @@ async function updatePrice(idx,val) {
   const p=parseFloat(val);
   if(!isNaN(p)&&p>=0){pf().positions[idx].current=p;renderMetrics();buildPerfChart();buildAllocCharts();renderPL();renderTreemap();await saveToCloud();}
 }
+
+// Update price for ALL entries of a ticker
+async function updatePriceByTicker(ticker, val) {
+  const p = parseFloat(val);
+  if (isNaN(p) || p < 0) return;
+  livePrices[ticker] = p;
+  pf().positions.forEach(pos => { if (pos.ticker === ticker) pos.current = p; });
+  renderMetrics(); buildPerfChart(); buildAllocCharts(); renderPL(); renderTreemap();
+  await saveToCloud();
+}
+
 async function deletePosition(idx) {
   if(!confirm('Eliminare questa posizione?')) return;
   const ticker=pf().positions[idx].ticker;
   pf().positions.splice(idx,1);
   if(pf().pac?.allocations?.[ticker]) delete pf().pac.allocations[ticker];
+  renderAll(); await saveToCloud();
+}
+
+// Delete ALL entries of a ticker
+async function deletePositionByTicker(ticker) {
+  if (!confirm(`Eliminare tutte le voci di ${ticker}? Le transazioni rimarranno nello storico.`)) return;
+  pf().positions = pf().positions.filter(p => p.ticker !== ticker);
+  if (pf().pac?.allocations?.[ticker]) delete pf().pac.allocations[ticker];
+  if (livePrices[ticker]) delete livePrices[ticker];
   renderAll(); await saveToCloud();
 }
 async function deleteTx(idx) {
