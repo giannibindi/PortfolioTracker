@@ -1156,26 +1156,41 @@ async function deleteTx(idx) {
   pf().transactions.splice(idx,1); renderHistory(); await saveToCloud();
 }
 
+// Parses a CSV line respecting quoted fields (handles commas inside names)
+function parseCSVLine(line) {
+  const result = [], re = /("([^"]*)")|([^,]+)|(?<=,|^)(?=,|$)/g;
+  let match;
+  while ((match = re.exec(line)) !== null) {
+    result.push(match[2] !== undefined ? match[2] : (match[3] || ''));
+  }
+  return result;
+}
+
 function handleCSV(e) {
   const file=e.target.files[0]; if(!file) return;
   const reader=new FileReader();
   reader.onload=async function(ev){
     const lines=ev.target.result.trim().split(/\r?\n/);
-    const header=lines[0].toLowerCase().split(',').map(h=>h.trim());
+    const header=parseCSVLine(lines[0]).map(h=>h.toLowerCase().trim());
     let added=0;
     for(let i=1;i<lines.length;i++){
-      const vals=lines[i].split(',').map(v=>v.trim()); if(vals.length<5) continue;
-      const row={}; header.forEach((h,j)=>row[h]=vals[j]);
+      const vals=parseCSVLine(lines[i]); if(vals.length<5) continue;
+      const row={}; header.forEach((h,j)=>row[h]=(vals[j]||'').trim());
       const pos={ticker:(row['ticker']||'').toUpperCase(),nome:row['nome']||row['ticker']||'',
         tipo:row['tipo']||'Azione',settore:row['settore']||'Altro',
         qty:parseFloat(row['quantita'])||0,avgPrice:parseFloat(row['prezzo_acquisto'])||0,
-        current:parseFloat(row['prezzo_attuale']||row['prezzo_acquisto'])||0,
+        current:(row['prezzo_attuale']&&row['prezzo_attuale']!=='0'?parseFloat(row['prezzo_attuale']):parseFloat(row['prezzo_acquisto']))||0,
         dividendYield:parseFloat(row['yield'])||0,
         inPac:row['pac']==='1'||row['pac']==='true',
         isDistribution:row['distribuzione']==='1'||row['distribuzione']==='true'};
       if(pos.ticker&&pos.qty>0){
         pf().positions.push(pos);
         pf().transactions.push({data:new Date().toISOString().slice(0,10),tipo:'Acquisto',ticker:pos.ticker,qty:pos.qty,price:pos.avgPrice});
+        // Initialize PAC allocation entry for this ticker if flagged
+        if(pos.inPac){
+          pf().pac = pf().pac || {amount:0, day:15, allocations:{}};
+          pf().pac.allocations[pos.ticker] = pf().pac.allocations[pos.ticker] || 0;
+        }
         added++;
       }
     }
