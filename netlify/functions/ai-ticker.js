@@ -98,7 +98,7 @@ Massimo 3 notizie e 3 eventi. Traduci i titoli delle notizie in italiano. sentim
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.3, maxOutputTokens: 1024 },
+          generationConfig: { temperature: 0.3, maxOutputTokens: 2048, thinkingConfig: { thinkingBudget: 0 } },
         }),
       }
     );
@@ -106,8 +106,10 @@ Massimo 3 notizie e 3 eventi. Traduci i titoli delle notizie in italiano. sentim
     if (!geminiRes.ok) throw new Error(data.error?.message || "Gemini error");
 
     const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
-    const clean = text.replace(/```json|```/g, "").trim();
+    console.log("Raw Gemini response:", text.slice(0, 500));
+    const clean = text.replace(/```json\n?|```/g, "").trim();
     const jsonStart = clean.indexOf('{'), jsonEnd = clean.lastIndexOf('}');
+    if (jsonStart === -1 || jsonEnd === -1) throw new Error("No JSON found in response: " + clean.slice(0,200));
     const result = JSON.parse(clean.slice(jsonStart, jsonEnd + 1));
 
     return { statusCode: 200, headers, body: JSON.stringify(result) };
