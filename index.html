@@ -171,6 +171,70 @@ tr:last-child td { border-bottom:none; }
 /* Dividend section */
 .div-item { display:flex; align-items:center; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border); font-size:13px; }
 .div-item:last-child { border-bottom:none; }
+
+/* AI Insights Banner */
+.ai-banner { border-radius: var(--radius-lg); padding: 1rem 1.25rem; margin-bottom: 14px; border: 1px solid var(--border); position: relative; overflow: hidden; }
+.ai-banner::before { content:''; position:absolute; inset:0; opacity:.04; background: repeating-linear-gradient(45deg, currentColor 0, currentColor 1px, transparent 1px, transparent 8px); }
+.ai-banner.bullish { border-color: rgba(29,158,117,.4); background: rgba(29,158,117,.06); }
+.ai-banner.bearish { border-color: rgba(216,90,48,.4); background: rgba(216,90,48,.06); }
+.ai-banner.neutral  { border-color: rgba(186,117,23,.4); background: rgba(186,117,23,.06); }
+.ai-banner-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; flex-wrap:wrap; gap:8px; }
+.ai-banner-title { font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:.06em; color:var(--text3); display:flex; align-items:center; gap:6px; }
+.ai-banner-summary { font-size:14px; font-weight:500; color:var(--text); margin-bottom:12px; line-height:1.4; }
+.ai-banner-macro { font-size:12px; color:var(--text2); margin-bottom:12px; line-height:1.5; }
+.ai-insights-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:10px; }
+.ai-insight-card { background:var(--bg); border:1px solid var(--border); border-radius:var(--radius); padding:10px 12px; }
+.ai-insight-type { font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:.06em; margin-bottom:4px; }
+.ai-insight-type.opportunity { color:var(--up); }
+.ai-insight-type.risk { color:var(--down); }
+.ai-insight-type.rebalance { color:#7F77DD; }
+.ai-insight-type.macro { color:#BA7517; }
+.ai-insight-title { font-size:13px; font-weight:600; color:var(--text); margin-bottom:4px; }
+.ai-insight-body { font-size:12px; color:var(--text2); line-height:1.5; }
+.ai-insight-tickers { margin-top:6px; display:flex; gap:4px; flex-wrap:wrap; }
+.ai-insight-ticker { font-size:10px; padding:1px 6px; border-radius:3px; background:var(--bg3); color:var(--text2); font-weight:500; }
+.ai-loading { display:flex; align-items:center; gap:8px; font-size:13px; color:var(--text2); padding:8px 0; }
+.ai-loading-dot { width:6px; height:6px; border-radius:50%; background:var(--accent); animation:pulse .8s ease-in-out infinite; }
+.ai-refresh-btn { font-size:11px; padding:3px 10px; }
+
+/* Ticker AI card */
+.ticker-ai-panel { margin-top:0; }
+.ticker-row { border-bottom:1px solid var(--border); }
+.ticker-row:last-child { border-bottom:none; }
+.ticker-row-main { display:flex; align-items:center; padding:10px 12px; gap:12px; cursor:pointer; }
+.ticker-row-main:hover { background:var(--bg2); }
+.ticker-expand-btn { margin-left:auto; font-size:18px; color:var(--text3); background:none; border:none; cursor:pointer; line-height:1; flex-shrink:0; transition:transform .2s; }
+.ticker-expand-btn.open { transform:rotate(180deg); }
+.ticker-ai-content { padding:0 12px 12px; display:none; }
+.ticker-ai-content.open { display:block; }
+.ticker-ai-tabs { display:flex; gap:4px; margin-bottom:10px; }
+.ticker-ai-tab { padding:4px 10px; font-size:12px; border:1px solid var(--border); border-radius:4px; background:transparent; color:var(--text2); cursor:pointer; }
+.ticker-ai-tab.active { background:var(--text); color:var(--bg); border-color:var(--text); }
+.news-item { padding:8px 0; border-bottom:1px solid var(--border); }
+.news-item:last-child { border-bottom:none; }
+.news-title { font-size:13px; font-weight:500; color:var(--text); margin-bottom:2px; }
+.news-meta { font-size:11px; color:var(--text3); display:flex; gap:8px; align-items:center; }
+.news-sentiment { font-size:10px; padding:1px 5px; border-radius:3px; font-weight:500; }
+.news-sentiment.positive { background:#E1F5EE; color:#0F6E56; }
+.news-sentiment.negative { background:#FAEEDA; color:#854F0B; }
+.news-sentiment.neutral  { background:var(--bg3); color:var(--text3); }
+.event-item { display:flex; align-items:flex-start; gap:10px; padding:8px 0; border-bottom:1px solid var(--border); }
+.event-item:last-child { border-bottom:none; }
+.event-icon { font-size:18px; flex-shrink:0; }
+.event-label { font-size:13px; font-weight:500; }
+.event-date { font-size:12px; color:var(--text2); }
+.event-detail { font-size:12px; color:var(--text3); }
+.analysis-box { background:var(--bg2); border-radius:var(--radius); padding:12px 14px; }
+.analysis-trend { font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:.05em; margin-bottom:6px; }
+.analysis-trend.bullish { color:var(--up); }
+.analysis-trend.bearish { color:var(--down); }
+.analysis-trend.neutral { color:#BA7517; }
+.analysis-summary { font-size:13px; color:var(--text); line-height:1.6; margin-bottom:8px; }
+.consensus-badge { display:inline-block; font-size:11px; padding:2px 10px; border-radius:4px; font-weight:600; }
+.consensus-badge.Buy { background:#E1F5EE; color:#0F6E56; }
+.consensus-badge.Hold { background:#FAEEDA; color:#854F0B; }
+.consensus-badge.Sell { background:rgba(216,90,48,.12); color:var(--down); }
+.consensus-badge.ND { background:var(--bg3); color:var(--text3); }
 </style>
 </head>
 <body>
@@ -228,6 +292,19 @@ tr:last-child td { border-bottom:none; }
 
   <!-- OVERVIEW -->
   <div class="panel active" id="tab-overview">
+    <!-- AI Insights Banner -->
+    <div class="ai-banner neutral" id="aiBanner">
+      <div class="ai-banner-header">
+        <div class="ai-banner-title">
+          <span>✦</span> Analisi AI del portafoglio
+          <span id="aiCacheLabel" style="font-size:10px;font-weight:400;color:var(--text3);"></span>
+        </div>
+        <button class="btn ai-refresh-btn" onclick="loadAiInsights(true)" id="aiRefreshBtn">↻ Aggiorna</button>
+      </div>
+      <div id="aiBannerBody">
+        <div class="ai-loading"><span class="ai-loading-dot"></span> Caricamento analisi AI...</div>
+      </div>
+    </div>
     <div class="metrics" id="metrics"></div>
 
     <!-- Performance chart -->
@@ -290,13 +367,9 @@ tr:last-child td { border-bottom:none; }
       <div class="card-title">Peso % posizioni</div>
       <div class="treemap-wrap" id="treemap"></div>
     </div>
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr><th>Ticker</th><th>Nome</th><th>Tipo</th><th>Qty</th><th>P. medio</th><th>P. attuale</th><th>Valore</th><th>P&L</th><th>P&L %</th><th></th></tr>
-        </thead>
-        <tbody id="posBody"></tbody>
-      </table>
+    <!-- Positions with expandable AI cards -->
+    <div class="card" style="padding:0;" id="positionsCard">
+      <div id="posBody"></div>
     </div>
     <div id="posEmpty" class="empty" style="display:none;">Nessuna posizione. Aggiungi la prima con "+ Posizione".</div>
   </div>
@@ -613,6 +686,7 @@ async function loadFromCloud() {
   renderAll();
   checkAndRunPac();
   await refreshPrices();
+  loadAiInsights(); // load AI banner (uses cache if < 24h)
 }
 
 async function saveToCloud() {
@@ -784,55 +858,146 @@ function renderMetrics() {
 function renderPositions() {
   const pos = pf().positions;
   document.getElementById('posEmpty').style.display = pos.length ? 'none' : 'block';
-
-  // Group positions by ticker — aggregate qty (weighted avg price) across multiple entries
-  const grouped = [];
-  const seen = {};
-  pos.forEach((p, i) => {
-    if (seen[p.ticker] !== undefined) {
-      const g = grouped[seen[p.ticker]];
-      const totalQty = g.qty + p.qty;
-      g.avgPrice = (g.qty * g.avgPrice + p.qty * p.avgPrice) / totalQty;
-      g.qty = totalQty;
-      g.indices.push(i); // track all source indices for delete
-      // Merge flags
-      if (p.inPac) g.inPac = true;
-      if (p.isDistribution) g.isDistribution = true;
-      if (p.dividendYield > (g.dividendYield||0)) g.dividendYield = p.dividendYield;
-    } else {
-      seen[p.ticker] = grouped.length;
-      grouped.push({ ...p, indices: [i] });
-    }
-  });
+  const grouped = groupPositions();
 
   document.getElementById('posBody').innerHTML = grouped.map((p) => {
-    // Use live price if available, otherwise use stored current
     const current = livePrices[p.ticker] || p.current;
     const val = p.qty * current;
     const pl = (current - p.avgPrice) * p.qty;
     const pct = ((current - p.avgPrice) / p.avgPrice) * 100;
     const bc = p.tipo==='Azione'?'badge-a':p.tipo==='ETF'?'badge-e':'badge-o';
     const isLive = !!livePrices[p.ticker];
-    const indicesJson = JSON.stringify(p.indices);
-    return `<tr>
-      <td><strong>${p.ticker}</strong>${p.inPac?` <span class="badge badge-pac">PAC</span>`:''}</td>
-      <td style="color:var(--text2);max-width:120px;overflow:hidden;text-overflow:ellipsis;">${p.nome}</td>
-      <td><span class="badge ${bc}">${p.tipo}</span>${p.isDistribution?` <span class="badge badge-div">Div</span>`:''}</td>
-      <td>${p.qty.toLocaleString('it-IT',{maximumFractionDigits:4})}</td>
-      <td>${fmt(p.avgPrice)}</td>
-      <td><div class="price-cell">
-        <input type="number" value="${current.toFixed(4)}" step="any" min="0"
-          style="width:90px;padding:3px 6px;font-size:12px;border:1px solid var(--border2);border-radius:4px;background:var(--bg2);color:var(--text);"
-          onchange="updatePriceByTicker('${p.ticker}',this.value)" />
-        ${isLive?'<span class="live-badge">live</span>':''}
-      </div></td>
-      <td><strong>${fmt(val)}</strong></td>
-      <td class="${pl>=0?'up':'down'}">${fmt(pl)}</td>
-      <td class="${pl>=0?'up':'down'}">${fmtPct(pct)}</td>
-      <td><button class="del-btn" onclick="deletePositionByTicker('${p.ticker}')" title="Elimina tutte le voci ${p.ticker}">×</button></td>
-    </tr>`;
+    const plColor = pl>=0 ? 'var(--up)' : 'var(--down)';
+    return `<div class="ticker-row" id="row_${p.ticker}">
+      <div class="ticker-row-main" onclick="toggleTickerPanel('${p.ticker}')">
+        <div style="min-width:0;flex:1;">
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px;">
+            <strong style="font-size:14px;">${p.ticker}</strong>
+            <span class="badge ${bc}">${p.tipo}</span>
+            ${p.inPac?'<span class="badge badge-pac">PAC</span>':''}
+            ${p.isDistribution?'<span class="badge badge-div">Div</span>':''}
+            ${isLive?'<span class="live-badge">live</span>':''}
+          </div>
+          <div style="font-size:12px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:260px;">${p.nome}</div>
+        </div>
+        <div style="text-align:right;flex-shrink:0;margin-left:12px;">
+          <div style="font-size:14px;font-weight:600;">${fmt(val)}</div>
+          <div style="font-size:12px;color:${plColor};">${fmt(pl)} (${fmtPct(pct)})</div>
+        </div>
+        <div style="text-align:right;flex-shrink:0;margin-left:12px;display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+          <div style="font-size:12px;color:var(--text2);">Qty: ${p.qty.toLocaleString('it-IT',{maximumFractionDigits:4})}</div>
+          <input type="number" value="${current.toFixed(2)}" step="any" min="0"
+            style="width:82px;padding:3px 6px;font-size:12px;border:1px solid var(--border2);border-radius:4px;background:var(--bg2);color:var(--text);text-align:right;"
+            onclick="event.stopPropagation()"
+            onchange="updatePriceByTicker('${p.ticker}',this.value)" />
+        </div>
+        <button class="ticker-expand-btn" id="expandBtn_${p.ticker}">⌄</button>
+      </div>
+      <div class="ticker-ai-content" id="aiContent_${p.ticker}">
+        <div class="ticker-ai-tabs">
+          <button class="ticker-ai-tab active" onclick="switchTickerTab('${p.ticker}','news',this)">Notizie</button>
+          <button class="ticker-ai-tab" onclick="switchTickerTab('${p.ticker}','events',this)">Eventi</button>
+          <button class="ticker-ai-tab" onclick="switchTickerTab('${p.ticker}','analysis',this)">Analisi</button>
+          <button class="ticker-ai-tab" onclick="switchTickerTab('${p.ticker}','details',this)">Dettagli</button>
+          <button class="del-btn" style="margin-left:auto;font-size:13px;" onclick="deletePositionByTicker('${p.ticker}')">× Elimina</button>
+        </div>
+        <div id="tickerTab_news_${p.ticker}"><div class="ai-loading"><span class="ai-loading-dot"></span> Caricamento...</div></div>
+        <div id="tickerTab_events_${p.ticker}" style="display:none;"></div>
+        <div id="tickerTab_analysis_${p.ticker}" style="display:none;"></div>
+        <div id="tickerTab_details_${p.ticker}" style="display:none;">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px;padding:4px 0;">
+            <div><span style="color:var(--text3);">Prezzo medio</span><div style="font-weight:500;">${fmt(p.avgPrice)}</div></div>
+            <div><span style="color:var(--text3);">Prezzo attuale</span><div style="font-weight:500;">${fmt(current)}</div></div>
+            <div><span style="color:var(--text3);">Valore totale</span><div style="font-weight:500;">${fmt(val)}</div></div>
+            <div><span style="color:var(--text3);">P&L</span><div style="font-weight:500;color:${plColor};">${fmt(pl)} (${fmtPct(pct)})</div></div>
+            <div><span style="color:var(--text3);">Yield</span><div style="font-weight:500;">${p.dividendYield||0}%</div></div>
+            <div><span style="color:var(--text3);">Settore</span><div style="font-weight:500;">${p.settore}</div></div>
+          </div>
+        </div>
+      </div>
+    </div>`;
   }).join('');
 }
+
+const tickerAiCache = {};
+
+function toggleTickerPanel(ticker) {
+  const content = document.getElementById('aiContent_' + ticker);
+  const btn = document.getElementById('expandBtn_' + ticker);
+  const isOpen = content.classList.contains('open');
+  document.querySelectorAll('.ticker-ai-content.open').forEach(el => el.classList.remove('open'));
+  document.querySelectorAll('.ticker-expand-btn.open').forEach(el => el.classList.remove('open'));
+  if (!isOpen) {
+    content.classList.add('open');
+    btn.classList.add('open');
+    if (!tickerAiCache[ticker]) loadTickerAi(ticker);
+  }
+}
+
+function switchTickerTab(ticker, tab, el) {
+  ['news','events','analysis','details'].forEach(t => {
+    const el2 = document.getElementById('tickerTab_' + t + '_' + ticker);
+    if (el2) el2.style.display = t === tab ? '' : 'none';
+  });
+  el.closest('.ticker-ai-tabs').querySelectorAll('.ticker-ai-tab').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+}
+
+async function loadTickerAi(ticker) {
+  const pos = groupPositions().find(p => p.ticker === ticker);
+  if (!pos) return;
+  try {
+    const res = await fetch('/api/ai-ticker', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ticker: pos.ticker, nome: pos.nome, tipo: pos.tipo,
+        settore: pos.settore, avgPrice: pos.avgPrice,
+        current: livePrices[pos.ticker] || pos.current, qty: pos.qty
+      })
+    });
+    if (!res.ok) throw new Error('API error');
+    const data = await res.json();
+    tickerAiCache[ticker] = data;
+    renderTickerAi(ticker, data);
+  } catch(e) {
+    const el = document.getElementById('tickerTab_news_' + ticker);
+    if (el) el.innerHTML = '<div style="color:var(--text3);font-size:13px;padding:8px 0;">Dati non disponibili al momento.</div>';
+  }
+}
+
+function renderTickerAi(ticker, data) {
+  const icons = { dividend:'💰', earnings:'📊', split:'✂️', other:'📅' };
+  const newsEl = document.getElementById('tickerTab_news_' + ticker);
+  if (newsEl) newsEl.innerHTML = (data.news||[]).length ? data.news.map(n =>
+    '<div class="news-item"><div class="news-title">' + n.title + '</div>' +
+    '<div class="news-meta"><span>' + (n.date||'') + '</span>' +
+    '<span class="news-sentiment ' + (n.sentiment||'neutral') + '">' +
+    (n.sentiment==='positive'?'Positivo':n.sentiment==='negative'?'Negativo':'Neutro') + '</span></div>' +
+    '<div style="font-size:12px;color:var(--text2);margin-top:3px;">' + (n.summary||'') + '</div></div>'
+  ).join('') : '<div style="color:var(--text3);font-size:13px;padding:8px 0;">Nessuna notizia recente trovata.</div>';
+
+  const evEl = document.getElementById('tickerTab_events_' + ticker);
+  if (evEl) evEl.innerHTML = (data.events||[]).length ? data.events.map(e =>
+    '<div class="event-item"><div class="event-icon">' + (icons[e.type]||'📅') + '</div>' +
+    '<div><div class="event-label">' + e.label + '</div>' +
+    '<div class="event-date">' + (e.date||'') + '</div>' +
+    '<div class="event-detail">' + (e.detail||'') + '</div></div></div>'
+  ).join('') : '<div style="color:var(--text3);font-size:13px;padding:8px 0;">Nessun evento imminente trovato.</div>';
+
+  const anEl = document.getElementById('tickerTab_analysis_' + ticker);
+  if (anEl && data.analysis) {
+    const a = data.analysis;
+    const cClass = a.consensus === 'N/D' ? 'ND' : (a.consensus||'ND');
+    anEl.innerHTML = '<div class="analysis-box">' +
+      '<div class="analysis-trend ' + (a.trend||'neutral') + '">' +
+      (a.trend==='bullish'?'▲ Rialzista':a.trend==='bearish'?'▼ Ribassista':'→ Neutrale') + '</div>' +
+      '<div class="analysis-summary">' + (a.summary||'') + '</div>' +
+      '<div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text2);">Consensus: ' +
+      '<span class="consensus-badge ' + cClass + '">' + (a.consensus||'N/D') + '</span></div></div>';
+  }
+}
+
 
 // ─── TREEMAP ─────────────────────────────────────────────────────────────────
 function renderTreemap() {
@@ -1319,6 +1484,61 @@ async function deletePf(idx) {
 
 document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');}));
 document.addEventListener('keydown', e => { if(e.key==='Enter'&&document.getElementById('authScreen').style.display!=='none') doAuth(); });
+
+// ─── AI INSIGHTS ─────────────────────────────────────────────────────────────
+async function loadAiInsights(forceRefresh = false) {
+  if (!authUserId) return;
+  const banner = document.getElementById('aiBanner');
+  const body = document.getElementById('aiBannerBody');
+  const refreshBtn = document.getElementById('aiRefreshBtn');
+  body.innerHTML = '<div class="ai-loading"><span class="ai-loading-dot"></span> Generazione analisi AI in corso...</div>';
+  refreshBtn.disabled = true;
+
+  const summary = groupPositions().map(p => ({
+    ticker: p.ticker, nome: p.nome, tipo: p.tipo, settore: p.settore,
+    qty: p.qty, avgPrice: p.avgPrice, current: livePrices[p.ticker] || p.current,
+    pl_pct: (((livePrices[p.ticker]||p.current) - p.avgPrice) / p.avgPrice * 100).toFixed(2),
+    valore: (p.qty * (livePrices[p.ticker]||p.current)).toFixed(2)
+  }));
+
+  try {
+    const res = await fetch('/api/ai-insights', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+      body: JSON.stringify({ user_id: authUserId, portfolio_summary: summary, force: forceRefresh })
+    });
+    if (!res.ok) throw new Error('API error');
+    const { insights, cached } = await res.json();
+    renderAiBanner(insights, cached);
+  } catch(e) {
+    body.innerHTML = `<div style="color:var(--text3);font-size:13px;">Analisi AI non disponibile al momento.</div>`;
+    console.error('AI insights error:', e);
+  } finally {
+    refreshBtn.disabled = false;
+  }
+}
+
+function renderAiBanner(insights, cached) {
+  const banner = document.getElementById('aiBanner');
+  banner.className = `ai-banner ${insights.sentiment || 'neutral'}`;
+
+  const typeLabel = { opportunity:'Opportunità', risk:'Rischio', rebalance:'Ribilanciamento', macro:'Macro' };
+  const cacheLabel = cached ? ' · cache' : ' · live';
+  document.getElementById('aiCacheLabel').textContent = cacheLabel;
+
+  document.getElementById('aiBannerBody').innerHTML = `
+    <div class="ai-banner-summary">${insights.summary || ''}</div>
+    ${insights.macro_context ? `<div class="ai-banner-macro">🌍 ${insights.macro_context}</div>` : ''}
+    <div class="ai-insights-grid">
+      ${(insights.insights||[]).map(ins => `
+        <div class="ai-insight-card">
+          <div class="ai-insight-type ${ins.type}">${typeLabel[ins.type]||ins.type}</div>
+          <div class="ai-insight-title">${ins.title}</div>
+          <div class="ai-insight-body">${ins.body}</div>
+          ${ins.tickers?.length ? `<div class="ai-insight-tickers">${ins.tickers.map(t=>`<span class="ai-insight-ticker">${t}</span>`).join('')}</div>` : ''}
+        </div>`).join('')}
+    </div>`;
+}
 
 // ─── BOOT ─────────────────────────────────────────────────────────────────────
 tryRestoreSession();
