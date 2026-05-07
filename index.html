@@ -946,23 +946,37 @@ function switchTickerTab(ticker, tab, el) {
 async function loadTickerAi(ticker) {
   const pos = groupPositions().find(p => p.ticker === ticker);
   if (!pos) return;
+  if (!GEMINI_API_KEY || GEMINI_API_KEY === 'AIzaSyAuNKymYLCUiBZrbLOwQnTZ-tE0rN1axH4') {
+    const el = document.getElementById('tickerTab_news_' + ticker);
+    if (el) el.innerHTML = '<div style="color:var(--text3);font-size:13px;padding:8px 0;">Configura la chiave Gemini per attivare l'analisi.</div>';
+    return;
+  }
   try {
-    const res = await fetch('/api/ai-ticker', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        ticker: pos.ticker, nome: pos.nome, tipo: pos.tipo,
-        settore: pos.settore, avgPrice: pos.avgPrice,
-        current: livePrices[pos.ticker] || pos.current, qty: pos.qty
-      })
-    });
-    if (!res.ok) throw new Error('API error');
-    const data = await res.json();
+    const current = livePrices[pos.ticker] || pos.current;
+    const pl = ((current - pos.avgPrice) / pos.avgPrice * 100).toFixed(2);
+    const baseTicker = ticker.replace(/\.[A-Z]+$/, '');
+    const [news1, news2] = await Promise.all([
+      fetchRssHeadlines(`https://feeds.finance.yahoo.com/rss/2.0/headline?s=${encodeURIComponent(ticker)}&lang=en-US&region=US`, 4),
+      baseTicker !== ticker ? fetchRssHeadlines(`https://feeds.finance.yahoo.com/rss/2.0/headline?s=${encodeURIComponent(baseTicker)}&lang=en-US&region=US`, 3) : Promise.resolve([]),
+    ]);
+    const allNews = [...news1, ...news2].slice(0,5);
+    const newsCtx = allNews.length ? `NOTIZIE:\n${allNews.map(n=>`- ${n.title}: ${n.desc}`).join('\n')}` : 'Nessuna notizia trovata.';
+
+    const data = await callGemini(`Analizza ${ticker} (${pos.nome}) per un investitore italiano. Rispondi SOLO con JSON valido senza testo aggiuntivo.
+
+POSIZIONE: prezzo medio €${pos.avgPrice}, attuale €${current}, qty ${pos.qty}, P&L ${pl}%, settore ${pos.settore}
+${newsCtx}
+
+JSON richiesto:
+{"news":[{"title":"max 80 car","summary":"in italiano max 150 car","sentiment":"positive","date":"data"}],"events":[{"type":"dividend","label":"max 40 car","date":"data o TBD","detail":"max 100 car"}],"analysis":{"trend":"bullish","summary":"max 280 car in italiano","consensus":"Buy"}}
+
+sentiment: positive|negative|neutral. type: dividend|earnings|split|other. trend: bullish|neutral|bearish. consensus: Buy|Hold|Sell|N/D. Max 3 news e 3 events. Solo JSON.`);
+
     tickerAiCache[ticker] = data;
     renderTickerAi(ticker, data);
   } catch(e) {
     const el = document.getElementById('tickerTab_news_' + ticker);
-    if (el) el.innerHTML = '<div style="color:var(--text3);font-size:13px;padding:8px 0;">Dati non disponibili al momento.</div>';
+    if (el) el.innerHTML = `<div style="color:var(--text3);font-size:13px;padding:8px 0;">Errore: ${e.message}</div>`;
   }
 }
 
@@ -1485,33 +1499,123 @@ async function deletePf(idx) {
 document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');}));
 document.addEventListener('keydown', e => { if(e.key==='Enter'&&document.getElementById('authScreen').style.display!=='none') doAuth(); });
 
-// ─── AI INSIGHTS ─────────────────────────────────────────────────────────────
+// ─── AI INSIGHTS (direct Gemini calls — no Netlify functions needed) ──────────
+const GEMINI_API_KEY = "AIzaSyAuNKymYLCUiBZrbLOwQnTZ-tE0rN1axH4";
+const GEMINI_MODEL = "gemini-2.5-flash";
+
+async function callGemini(prompt) {
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0.4, maxOutputTokens: 2048, thinkingConfig: { thinkingBudget: 0 } },
+      })
+    }
+  );
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error?.message || 'Gemini error');
+  const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  const clean = text.replace(/```json\n?|```/g, '').trim();
+  const s = clean.indexOf('{'), e2 = clean.lastIndexOf('}');
+  if (s === -1 || e2 === -1) throw new Error('No JSON in response: ' + clean.slice(0,200));
+  return JSON.parse(clean.slice(s, e2 + 1));
+}
+
+async function fetchRssHeadlines(url, max = 4) {
+  try {
+    // Use a CORS proxy since we are in the browser
+    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+    const res = await fetch(proxyUrl);
+    const data = await res.json();
+    const xml = data.contents || '';
+    const items = [];
+    const re = /<item>([\s\S]*?)<\/item>/g;
+    let m;
+    while ((m = re.exec(xml)) !== null && items.length < max) {
+      const t = m[1].match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/) || m[1].match(/<title>(.*?)<\/title>/);
+      const d = m[1].match(/<description><!\[CDATA\[(.*?)\]\]><\/description>/) || m[1].match(/<description>(.*?)<\/description>/);
+      if (t) items.push({ title: t[1].trim(), desc: d ? d[1].replace(/<[^>]+>/g,'').trim().slice(0,150) : '' });
+    }
+    return items;
+  } catch(e) { return []; }
+}
+
+// Simple cache in memory + Supabase
+let aiInsightsCache = null;
+
 async function loadAiInsights(forceRefresh = false) {
-  if (!authUserId) return;
-  const banner = document.getElementById('aiBanner');
+  if (!authUserId || !GEMINI_API_KEY || GEMINI_API_KEY === 'AIzaSyAuNKymYLCUiBZrbLOwQnTZ-tE0rN1axH4') {
+    document.getElementById('aiBannerBody').innerHTML = '<div style="color:var(--text3);font-size:13px;">Configura la chiave Gemini nell'index.html per attivare l'analisi AI.</div>';
+    return;
+  }
+
   const body = document.getElementById('aiBannerBody');
   const refreshBtn = document.getElementById('aiRefreshBtn');
+
+  // Check Supabase cache (24h)
+  if (!forceRefresh) {
+    try {
+      const baseUrl = SUPA_URL.replace(/\/rest\/v1\/?$/, '').replace(/\/$/, '');
+      const cacheRes = await fetch(
+        `${baseUrl}/rest/v1/portfolios?user_id=eq.${encodeURIComponent(authUserId)}&select=insights_cache&limit=1`,
+        { headers: { apikey: SUPA_KEY, Authorization: `Bearer ${authToken}` } }
+      );
+      const rows = await cacheRes.json();
+      const cache = rows?.[0]?.insights_cache;
+      if (cache?.generated_at && (Date.now() - new Date(cache.generated_at).getTime()) < 24*60*60*1000) {
+        renderAiBanner(cache.insights, true);
+        return;
+      }
+    } catch(e) { console.warn('Cache check failed:', e); }
+  }
+
   body.innerHTML = '<div class="ai-loading"><span class="ai-loading-dot"></span> Generazione analisi AI in corso...</div>';
   refreshBtn.disabled = true;
 
-  const summary = groupPositions().map(p => ({
-    ticker: p.ticker, nome: p.nome, tipo: p.tipo, settore: p.settore,
-    qty: p.qty, avgPrice: p.avgPrice, current: livePrices[p.ticker] || p.current,
-    pl_pct: (((livePrices[p.ticker]||p.current) - p.avgPrice) / p.avgPrice * 100).toFixed(2),
-    valore: (p.qty * (livePrices[p.ticker]||p.current)).toFixed(2)
-  }));
-
   try {
-    const res = await fetch('/api/ai-insights', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
-      body: JSON.stringify({ user_id: authUserId, portfolio_summary: summary, force: forceRefresh })
-    });
-    if (!res.ok) throw new Error('API error');
-    const { insights, cached } = await res.json();
-    renderAiBanner(insights, cached);
+    const positions = groupPositions();
+    const tickers = positions.map(p => p.ticker).slice(0,6);
+    const [macroNews, tickerNews] = await Promise.all([
+      fetchRssHeadlines('https://feeds.finance.yahoo.com/rss/2.0/headline?s=%5EGSPC,%5EFTSE&lang=en-US&region=US', 4),
+      fetchRssHeadlines(`https://feeds.finance.yahoo.com/rss/2.0/headline?s=${tickers.join(',')}&lang=en-US&region=US`, 4),
+    ]);
+    const newsCtx = [
+      macroNews.length ? `MARKET NEWS:\n${macroNews.map(n=>`- ${n.title}: ${n.desc}`).join('\n')}` : '',
+      tickerNews.length ? `PORTFOLIO NEWS:\n${tickerNews.map(n=>`- ${n.title}: ${n.desc}`).join('\n')}` : '',
+    ].filter(Boolean).join('\n');
+
+    const summary = positions.map(p => ({
+      ticker: p.ticker, tipo: p.tipo, settore: p.settore,
+      valore: (p.qty*(livePrices[p.ticker]||p.current)).toFixed(0),
+      pl_pct: (((livePrices[p.ticker]||p.current)-p.avgPrice)/p.avgPrice*100).toFixed(1)+'%'
+    }));
+
+    const insights = await callGemini(`Sei un consulente finanziario. Analizza questo portafoglio e le notizie recenti. Rispondi SOLO con JSON valido senza testo aggiuntivo.
+
+PORTAFOGLIO: ${JSON.stringify(summary)}
+${newsCtx}
+
+JSON richiesto:
+{"sentiment":"bullish","summary":"frase max 120 caratteri","macro_context":"contesto macro max 200 caratteri","insights":[{"type":"opportunity","title":"max 50 car","body":"max 180 car","tickers":["TICKER"]}]}
+
+sentiment: bullish|neutral|bearish. type: opportunity|risk|rebalance|macro. Max 4 insights. Solo JSON.`);
+
+    // Save to Supabase cache
+    try {
+      const baseUrl = SUPA_URL.replace(/\/rest\/v1\/?$/, '').replace(/\/$/, '');
+      await fetch(`${baseUrl}/rest/v1/portfolios?user_id=eq.${encodeURIComponent(authUserId)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type':'application/json', apikey:SUPA_KEY, Authorization:`Bearer ${authToken}`, Prefer:'return=minimal' },
+        body: JSON.stringify({ insights_cache: { insights, generated_at: new Date().toISOString() } })
+      });
+    } catch(e) { console.warn('Cache save failed:', e); }
+
+    renderAiBanner(insights, false);
   } catch(e) {
-    body.innerHTML = `<div style="color:var(--text3);font-size:13px;">Analisi AI non disponibile al momento.</div>`;
+    body.innerHTML = `<div style="color:var(--text3);font-size:13px;">Analisi AI non disponibile: ${e.message}</div>`;
     console.error('AI insights error:', e);
   } finally {
     refreshBtn.disabled = false;
