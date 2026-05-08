@@ -946,7 +946,7 @@ function switchTickerTab(ticker, tab, el) {
 async function loadTickerAi(ticker) {
   const pos = groupPositions().find(p => p.ticker === ticker);
   if (!pos) return;
-  if (!GEMINI_API_KEY || GEMINI_API_KEY === 'AIzaSyAuNKymYLCUiBZrbLOwQnTZ-tE0rN1axH4') {
+  if (!GEMINI_API_KEY || GEMINI_API_KEY === 'INSERISCI_QUI_LA_TUA_CHIAVE_GEMINI') {
     const el = document.getElementById('tickerTab_news_' + ticker);
     if (el) el.innerHTML = '<div style="color:var(--text3);font-size:13px;padding:8px 0;">Configura la chiave Gemini per attivare l'analisi.</div>';
     return;
@@ -1500,7 +1500,7 @@ document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',func
 document.addEventListener('keydown', e => { if(e.key==='Enter'&&document.getElementById('authScreen').style.display!=='none') doAuth(); });
 
 // ─── AI INSIGHTS (direct Gemini calls — no Netlify functions needed) ──────────
-const GEMINI_API_KEY = "AIzaSyAuNKymYLCUiBZrbLOwQnTZ-tE0rN1axH4";
+const GEMINI_API_KEY = "INSERISCI_QUI_LA_TUA_CHIAVE_GEMINI";
 const GEMINI_MODEL = "gemini-2.5-flash";
 
 async function callGemini(prompt) {
@@ -1547,7 +1547,7 @@ async function fetchRssHeadlines(url, max = 4) {
 let aiInsightsCache = null;
 
 async function loadAiInsights(forceRefresh = false) {
-  if (!authUserId || !GEMINI_API_KEY || GEMINI_API_KEY === 'AIzaSyAuNKymYLCUiBZrbLOwQnTZ-tE0rN1axH4') {
+  if (!authUserId || !GEMINI_API_KEY || GEMINI_API_KEY === 'INSERISCI_QUI_LA_TUA_CHIAVE_GEMINI') {
     document.getElementById('aiBannerBody').innerHTML = '<div style="color:var(--text3);font-size:13px;">Configura la chiave Gemini nell'index.html per attivare l'analisi AI.</div>';
     return;
   }
