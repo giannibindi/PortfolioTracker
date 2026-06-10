@@ -93,13 +93,13 @@ Massimo 4 insights. Sii specifico e concreto basandoti sulle notizie fornite. Se
 
   try {
     const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.4, maxOutputTokens: 2048, thinkingConfig: { thinkingBudget: 0 } },
+          generationConfig: { temperature: 0.4, maxOutputTokens: 1024 },
         }),
       }
     );
@@ -107,10 +107,8 @@ Massimo 4 insights. Sii specifico e concreto basandoti sulle notizie fornite. Se
     if (!geminiRes.ok) throw new Error(data.error?.message || "Gemini API error");
 
     const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
-    console.log("Raw Gemini response:", text.slice(0, 500));
-    const clean = text.replace(/```json\n?|```/g, "").trim();
+    const clean = text.replace(/```json|```/g, "").trim();
     const jsonStart = clean.indexOf('{'), jsonEnd = clean.lastIndexOf('}');
-    if (jsonStart === -1 || jsonEnd === -1) throw new Error("No JSON found in response: " + clean.slice(0,200));
     const insights = JSON.parse(clean.slice(jsonStart, jsonEnd + 1));
 
     await fetch(
